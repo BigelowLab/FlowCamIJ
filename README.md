@@ -17,3 +17,4 @@ Download the source code to an ImageJ plugins directory.
 ### Who do I talk to? ####
 * Ben Tupper btupper@beigelow.org
 * Nicole Poulton npoulton@bigelow.org
+* Michael Sieracki msieracki@bigelow.org
