@@ -1,3 +1,5 @@
+// TODO throw exceptions?
+
 import ij.*;
 import ij.text.*; //TextWindow and TextPanel
 import ij.util.*;  //access to Tools
