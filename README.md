@@ -13,6 +13,7 @@ Download the source code to an ImageJ plugins directory.
 
 * *Context* class for reading entries in the context file.
 * *Spreadsheet* class for reading the metadata file
+* *FlowCamVirtualStack* and *FlowCamVirtualStackPlus* for navigating the images
 
 ### Who do I talk to? ####
 * Ben Tupper btupper@beigelow.org
