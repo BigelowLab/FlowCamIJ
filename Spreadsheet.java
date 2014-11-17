@@ -671,11 +671,34 @@ public class Spreadsheet {
               IJ.showStatus("Error - input output error: " + filename);
               return false;
       }    
-      //return split();  2009-02-28 swithed to simple true
+      //return split();  2009-02-28 switched to simple true
       dataAsArray = false;
-      return true;
+      String[] collagename = getDataColumn("collage_file");
+      String[] collageslice = encodeSlicesFromString(collagename);
+      boolean ok = appendDataColumn("collage_image", collageslice);
+      return ok;
     } //readFile
-  
+
+/**
+   Generate slice numbers from the names of collage_file column
+   @param x a String array of names (collage_file usually)
+   @return a String array of slice numbers, 1,2,3,...
+   */
+   public String[] encodeSlicesFromString(String[] x){
+      String[] slice_name = new String[x.length];
+      slice_name[0] = "1";
+      int slice_num = 1;
+      for (int i = 1; i < x.length; i++){
+         if (x[i].equalsIgnoreCase(x[i-1])){
+            slice_name[i] = slice_name[i-1];
+         } else {
+            slice_num++;
+            slice_name[i] = String.valueOf(slice_num);
+         }
+      } //i-loop
+      return slice_name;
+   }
+   
 /**
   * Prints the contents of the vector to the ImageJ log window.
   * 

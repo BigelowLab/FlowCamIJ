@@ -12,12 +12,20 @@
 */
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.Exception;
 import java.util.HashSet;
 import java.util.Arrays;
 
 import ij.IJ;
 import ij.measure.Calibration;
+import ij.measure.ResultsTable;
+import ij.process.ImageProcessor;
+import ij.process.ByteProcessor;
+import ij.process.BinaryProcessor;
+import ij.ImagePlus;
 
 public class FlowCam {
    
@@ -27,6 +35,7 @@ public class FlowCam {
 
    public Context ctx;
    public Spreadsheet data;
+   public ResultsTable rt;
    
    public String[] collageFilenames;
    public String[] collageMaskFilenames;
@@ -52,7 +61,7 @@ public class FlowCam {
       @param path the path to the FlowCam diretcory
    */
    public FlowCam(String path){
-      init(path);
+      boolean ok = init(path);
    } //FlowCam
 
 
@@ -78,15 +87,16 @@ public class FlowCam {
             System.err.println("Caught Exception: " + e.getMessage());
          }
          data = new Spreadsheet(inputDir.getPath() + File.separator + this.name + ".csv",",");
-
          populateFileLists();
          setCalibration();
-         
       } else {
          IJ.log("path not found: " + inputDir.getPath());
          ok = false;
       }
-   
+      if (ok){
+         rt = new ResultsTable();
+         rt.reset();
+      }
       return ok;
    } //init
    
@@ -97,8 +107,7 @@ public class FlowCam {
       @param unit the name of the unit (typically "um")
    */
    public void setCalibration(double pixelHeight, double pixelWidth, String unit){
-      
-      if (cal == null) cal = new Calibration()
+      if (cal == null) cal = new Calibration();
       cal.pixelWidth = pixelWidth;
       cal.pixelHeight = pixelHeight;
       cal.setUnit(unit);
@@ -112,7 +121,7 @@ public class FlowCam {
     Set the calibration for all images based upon values in the Context file
    */
    public void setCalibration(){
-      double pixelSize = cal.getDouble("Fluid", "CalibrationConstant", 1.0);
+      double pixelSize = ctx.getDouble("Fluid", "CalibrationConstant", 1.0);
       setCalibration(pixelSize, pixelSize, "um"); 
    }//setCalibration
    
@@ -209,6 +218,125 @@ public class FlowCam {
       Arrays.sort(unique);
       return unique;
    } //getUnique
+   
+   /* 
+      Retrieve the subset image coordinates for a subimage identified by 0-based index from stack identified by name ['collageImages', 'collageMaskImages', 'rawImages', 'calImages']
+      @param index the subimage index, not that this is 0 based by FlowCam stores 1-based
+      @param what the name of the image stack from which to retrieve the subimage 
+      @return a four element int array of [x0,y0,w,h,slice]    
+   */
+   public int[] getSubsetCoords(int index, String what){
+      int x0;
+      int y0;
+      int image_slice;
+      int w = data.getDataElementInt("image_w", index);
+      int h = data.getDataElementInt("image_h", index);
+      if (what.startsWith("collage")){
+         x0 = data.getDataElementInt("image_x", index);
+         y0 = data.getDataElementInt("image_y", index);
+         image_slice = data.getDataElementInt("collage_image", index);
+      } else {
+         x0 = data.getDataElementInt("scr_x", index);
+         y0 = data.getDataElementInt("src_y", index);
+         if (what.startsWith("raw")){
+            image_slice = data.getDataElementInt("src_image", index);
+         } else {
+            image_slice = data.getDataElementInt("cal_image", index); 
+         }
+      }
+      int[] r = {x0, y0, w, h, image_slice};
+      return r;
+   }
+    
+   /*
+      Retrieve the image processor for a subimage identified by 0-based index from stack identified by name ['collageImages', 'collageMaskImages', 'rawImages', 'calImages']
+      @param index the subimage index, not that this is 0 based by FlowCam stores 1-based
+      @param what the name of the image stack from which to retrieve the subimage 
+      @return a an image processor for the specified subset
+   */
+   public ImageProcessor createSubsetProcessor(int index, String what, int pad){
+      int[] x = getSubsetCoords(index, what);
+      ImageProcessor ip = null;
+      if (what.equalsIgnoreCase("collageImages")){
+         collageImages.setSlice(x[4]);
+         ip = collageImages.createSubsetProcessor(x[0],x[1],x[2],x[3],pad);
+      } else if (what.equalsIgnoreCase("collageMaskImages")){
+         collageMaskImages.setSlice(x[4]);
+         ip = collageMaskImages.createSubsetProcessor(x[0],x[1],x[2],x[3],pad);
+      } else if (what.equalsIgnoreCase("rawImages")){
+         rawImages.setSlice(x[4]);
+         ip = rawImages.createSubsetProcessor(x[0],x[1],x[2],x[3],pad);
+      } else if (what.equalsIgnoreCase("rawImages")){
+         rawImages.setSlice(x[4]);
+         ip = rawImages.createSubsetProcessor(x[0],x[1],x[2],x[3],pad);
+      } 
+      return ip;
+   } //createSubsetProcessor
+   /*
+      Retrieve the image processor for a subimage identified by 0-based index from stack identified by name ['collageImages', 'collageMaskImages', 'rawImages', 'calImages']
+      @param index the subimage index, not that this is 0 based by FlowCam stores 1-based
+      @param what the name of the image stack from which to retrieve the subimage 
+      @return a an image plus for the specified subset
+   */
+   public ImagePlus createSubsetImagePlus(int index, String what, int pad){
+      ImageProcessor newIp = createSubsetProcessor(index, what, pad);
+      if (newIp == null) { return null;}
+      ImagePlus newImp = new ImagePlus("Subset-" + index, newIp);
+      newImp.setCalibration(cal);
+      return newImp; 
+  }
+   
+   /*
+      Retrieve the image processor for a subimage identified by 0-based index from stack identified by name ['collageImages', 'collageMaskImages', 'rawImages', 'calImages']
+      @param index the subimage index, not that this is 0 based by FlowCam stores 1-based
+      @param what the name of the image stack from which to retrieve the subimage 
+      @return a an image plus for the specified subset
+   */
+   public BinaryProcessor createSubsetBinaryProcessor(int index, String what, int pad){
+      ImageProcessor newIp = createSubsetProcessor(index, what, pad);
+      if (newIp == null) { 
+         IJ.log("newIp is null");
+         return null;
+      }
+      ByteProcessor bytIp = new ByteProcessor(newIp, true);
+      BinaryProcessor bIp = new BinaryProcessor(bytIp);
+      return bIp; 
+  }
+  
+
+   /*
+     Write results to CSV file
+   */
+   public void saveTable(){
+      String filename = outputDir.getPath() + File.separator + name + ".csv";
+      saveTable(filename);
+   }
+   /*
+      Write results to CSV file
+     */
+   public void saveTable(String filename){
+   
+      String t = "";
+      String eol = "\n";
+      int label = 0;
+      int slice = 0;
+      int n = rt.getCounter();
+      try {
+         BufferedWriter out = new BufferedWriter(new FileWriter(filename));
+         t = (rt.getColumnHeadings());
+         t = t.replace(" ", "");
+         t = "id" + (t.substring(0, t.length()-1)).replaceAll("\t",",");
+         out.write(t + eol);       
+         for (int i = 0; i < n; i++){
+            t = rt.getRowAsString(i);
+            t = (t.substring(0, t.length()-1)).replaceAll("\t",",");
+            out.write(t + eol);
+         }
+         out.close();
+      } catch (IOException e) {
+         IJ.log("Error writing to " + filename);
+      }
+   }//saveTable
    
 
 } // class FlowCam

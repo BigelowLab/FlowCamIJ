@@ -14,6 +14,7 @@ public class Test_Spreadsheet implements PlugIn {
          IJ.log("size = " + x.size());
          IJ.log("ncol = " + x.countColumns() );
          IJ.log("sigma_intensity [2] =" + x.getDataElementDouble("sigma_intensity", 2));
+         x.showInTextWindow("Boo!");
 		} catch (Exception e) {
          		IJ.log("Caught Exception: " + e.getMessage());
       	}

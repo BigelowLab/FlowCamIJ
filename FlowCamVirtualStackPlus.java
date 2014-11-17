@@ -223,6 +223,7 @@ public class FlowCamVirtualStackPlus extends ImagePlus {
   * @param y0 the starting coordinate
   * @param w the width of the subset image (from x0 to right)
   * @param height the height of the subset image (from y0 downward)
+  * @param pad the number of pixels to pad by in x and y
   * @return a subset image of the specified coordinates with the grayscale
   * values and calibration of the the original
   */
@@ -237,4 +238,5 @@ public class FlowCamVirtualStackPlus extends ImagePlus {
     return newImp; 
     
   }
+  
 } //FlowCamVirtualStack
