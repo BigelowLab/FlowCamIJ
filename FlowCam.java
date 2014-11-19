@@ -20,12 +20,15 @@ import java.util.HashSet;
 import java.util.Arrays;
 
 import ij.IJ;
+import ij.util.Tools;
 import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
 import ij.process.BinaryProcessor;
 import ij.ImagePlus;
+import ij.gui.Plot;
+import ij.gui.PlotWindow;
 
 public class FlowCam {
    
@@ -49,6 +52,9 @@ public class FlowCam {
    public FlowCamVirtualStackPlus calImages;
    public FlowCamVirtualStackPlus rawMaskImages;
    public FlowCamVirtualStackPlus collageMaskImages;
+   
+   public Plot plot;
+   public PlotWindow plotWindow;
    
    /**
       Create an empty instance of FlowCam
@@ -338,5 +344,114 @@ public class FlowCam {
       }
    }//saveTable
    
-
+   /* 
+      Retrieve a data column as double
+      @param name
+      @param what the name of the dataset ['input', 'analysis']
+      @return a double precision 1d array
+   */
+   public double[] getColumnDouble(String name, String what){
+   
+      double[] x = null;
+      if (what.equalsIgnoreCase("analysis")){
+         if (this.rt != null){
+            int idx = rt.getColumnIndex(name);
+            if (idx > -1) { x = rt.getColumnAsDoubles(idx); }
+         }
+      } else if (what.equalsIgnoreCase("input")) {
+         if (this.data != null){
+            x = data.getDataColumnDouble(name);  
+         }
+      }
+      return x;
+   }
+   
+   
+   /* Verify that the named column in the specified table can be converted to double
+      @param name
+      @param what the name of the dataset ['input', 'analysis']
+      @return true is the column can be cast as double
+   */
+   public boolean verifyColumnAsDouble(String name, String what){
+      boolean b = true;
+      String s = "foobar";
+      double x;
+      if (what.equalsIgnoreCase("analysis")){
+         if (this.rt != null){
+            int idx = rt.getColumnIndex(name);
+            if (idx > -1) { s = rt.getStringValue(idx,0); }
+         }
+      } else if (what.equalsIgnoreCase("input")) {
+         if (this.data != null){
+            s = data.getDataElement(name, 0);  
+         }
+      }
+      x = Tools.parseDouble(s);
+      if (Double.isNaN(x)) { b = false; }
+      return b;
+   }
+   /*
+      Get the range of a double vector
+      @param x the vector
+      @return a two element docuble vector of min and max
+   */
+   public double[] getRange(double[] x){
+      return getRange(x, 0.0);
+   }
+   
+   /*
+      Get the range of a double vector with a fractional padding
+      @param x the vector
+      @param fractionalPad the 'extra' padding to expand the range
+      @return a two element docuble vector of min and max
+   */
+   public double[] getRange(double[] x, double fractionalPad){
+      //initialize
+      double minV = x[0];
+      if (Double.isNaN(minV) || Double.isInfinite(minV)) {minV = 100000000.0;}
+      double maxV = x[0];
+      if (Double.isNaN(maxV)  || Double.isInfinite(maxV)) {maxV = -100000000.0;}
+      for (int i = 1; i < x.length ; i++){
+         if (!Double.isNaN(x[i]) && !Double.isInfinite(x[i])) {
+            if (x[i] < minV) { minV = x[i]; }
+            if (x[i] > maxV) { maxV = x[i]; }
+         }
+      } //i loop
+      if (fractionalPad > 0.0){
+         double span = maxV - minV;
+         double f = span * fractionalPad;
+         minV = minV - f;
+         maxV = maxV + f;
+      } //pad > 0?
+      double[] r = {minV, maxV};
+      return r;
+   }   
+   
+   
+   /* 
+      Plot a pair of FlowCam measurements from the input data set
+      @param xLabel the name of the x data
+      @param yLabel the name of the yData
+   */
+      public void plot(String xLabel, String yLabel){
+         plot(xLabel, yLabel, "input");
+      }
+   /* 
+      Plot a pair of FlowCam measurements
+      @param xLabel the name of the x data
+      @param yLabel the name of the yData
+      @param what the name of the dataset ['input', 'analysis']
+   */
+      public void plot(String xLabel, String yLabel, String what){
+         double[] x = getColumnDouble(xLabel, what);
+         double[] y = getColumnDouble(yLabel, what);
+         double[] xlim = getRange(x, 0.04);
+         double[] ylim = getRange(y, 0.04);
+         
+         plot = new Plot(name, xLabel, yLabel);
+         plot.setLimits(xlim[0], xlim[1], ylim[0], ylim[1]);
+         if ((x != null) && (y != null)){
+            plot.addPoints(x, y, Plot.CIRCLE);
+         }
+      }
 } // class FlowCam
