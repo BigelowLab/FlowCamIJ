@@ -2,6 +2,7 @@ import ij.*;
 import ij.process.*;
 import ij.gui.*;
 import ij.measure.ResultsTable;
+import ij.io.DirectoryChooser;
 
 import java.awt.*;
 import ij.plugin.*;
@@ -12,10 +13,11 @@ public class Test_FlowCam implements PlugIn {
 
 	public void run(String arg) {
 	   String inputPath;
-	  
 	   inputPath = Macro.getOptions();
 	   if (inputPath == null){
-	     inputPath = "/Users/Shared/data/fac/NASAcarbon/fcam/242-142907";
+	     inputPath = "/Users/Shared/data/fac/201-080131";
+	     //DirectoryChooser dc = new DirectoryChooser("Please select a FlowCAM directory");
+	     //inputPath = dc.getDirectory();
 	   }
       FlowCam fcam = new FlowCam(inputPath);
       fcam.loadStack("collageMaskImages");
