@@ -1,0 +1,15 @@
+// FlowCam_Simple_Batch.txt macro
+//
+
+
+// select a file listing one FlowCam directory per line
+file = File.openDialog("Please select batch file list");
+
+ff = split(File.openAsString(file), "\n");
+
+for (i = 0 ; i < ff.length; i++){
+	//print(ff[i]);
+	run("FlowCam Simple", ff[i]);
+}
+
+print("Done!")

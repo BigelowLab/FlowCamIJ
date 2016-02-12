@@ -9,8 +9,9 @@ import java.util.ArrayList; //for ArrayList stuff
 
 
 public class Spreadsheet {
+  public String version = "3.4.5";
   /** The delimiter that separates fields of data in each record - by default tab ("\t") */
-  public String delim = "\t";
+  public String delim = ",";
   /** State variable indicating the state of each row */
   public boolean dataAsArray = false;
   /** The vector that contains arbitrary lines of header info (if any)*/
@@ -19,7 +20,11 @@ public class Spreadsheet {
   public ArrayList <Object>vFieldnames = new ArrayList<Object>();
   /** The vector of data */
   public ArrayList <Object> vData = new ArrayList<Object>();
-  
+  /** Common legacy names - use matchColumnName() to get verision dependent equivalent */
+  public String[] commonFieldNames = {"collage_file", "scr_image", "cal_image",
+        "image_w", "image_h", "image_x", "image_y", 
+        "src_x", "src_y",
+        "sigma_intensity"};
 /** 
   * a generic constructor
   */
@@ -33,9 +38,15 @@ public class Spreadsheet {
   public Spreadsheet(String file){
     boolean bOK = readFile(file);
   } 
-  
-  public Spreadsheet(String file, String sep){
-    this.delim = sep;
+
+/** Creates and instance of this class and reads in the given file.  The files should be a simple 
+  * ASCII delimited file of columns of data where the first row contains the column names (fieldnames)
+  *
+  * @param file the fully qualified filename to read
+  * @param version the 'SoftwareVersion' number from the context file
+  */  
+  public Spreadsheet(String file, String version){
+    this.version = version;
     boolean bOK = readFile(file);
   }
 
@@ -419,8 +430,48 @@ public class Spreadsheet {
       names = ((String) vFieldnames.get(0)).split(delim);
     }
     return names;
-  }
+  } //getFieldnames
   
+/**
+  * Match the data column name to the version
+  * @param name the generic name of the column
+  * @return the actual version dependent name
+  */
+    public String matchColumnName(String name){
+    
+        String[] R = new String[commonFieldNames.length];
+        if (this.version.compareTo("3.4.5") == 0) {
+            R = new String[] {"Image File", "Source Image", "Calibration Image",
+                    "Image Height", "Image Width", "Image X", "Image Y",
+                    "Capture X", "Capture Y",
+                    "Sigma Intensity"};
+        } else if (this.version.compareTo("2.0.0") == 0) {
+            R = new String[]{"Filename", "Unknown", "Unknown",
+                    "PixelH", "PixelW", "SaveX", "SaveY",
+                    "CaptureX", "CaptureY",
+                    "Sigma Intensity" };              
+        } else {
+            R = new String[] {"Image File", "Source Image", "Calibration Image",
+                    "Image Height", "Image Width", "Image X", "Image Y",
+                    "Capture X", "Capture Y",
+                    "Sigma Intensity"};
+        }
+        
+        int index = -1;
+        for (int i = 0; i < commonFieldNames.length; i++){
+            if ( commonFieldNames[i].equalsIgnoreCase(name)){
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) {
+            return name;
+        } else {
+            return(R[index]); 
+        }
+    
+    } 
+    
 /**
   * Prepends the specified string to each fieldname. For example, to prepend
   * "FIT_" to each fieldname do ...
@@ -458,13 +509,14 @@ public class Spreadsheet {
   */
   public int getFieldIndex(String fieldname){
     if (vFieldnames.size() == 0){ return -1;}
+    String name = matchColumnName(fieldname);
     split();
     String[] a = (String[]) vFieldnames.get(0);;
     int index = -1;
     
     for (int i = 0; i< a.length;i++){
       //IJ.log(fieldname + " -> " + i + "=" + a[i].toString());
-      if (a[i].equalsIgnoreCase(fieldname)==true){
+      if (a[i].equalsIgnoreCase(name)==true){
         index = i;
         break;
       }
@@ -483,6 +535,16 @@ public class Spreadsheet {
     String[] a = (String[]) vFieldnames.get(0);
     return a.length;
   }
+
+/**
+  * Counts the number of columns
+  * 
+  * @return the number of columns as indicated by the number of fieldnames
+  */
+  public int ncol(){
+    return countColumns();
+  }
+  
 /**
   * Returns the number of elements in the data vector
   *
@@ -491,6 +553,15 @@ public class Spreadsheet {
   public int size(){
     return vData.size();
   }
+/**
+  * Counts the number of rows
+  * 
+  * @return the number of rows
+  */
+  public int nrow(){
+    return size();
+  }  
+
 /**
   * If the rows of data and the fieldnames are held as String Arrays
   * then this method will join them with the delimiter
@@ -564,21 +635,6 @@ public class Spreadsheet {
     }//split
 
 
-/**
-  * Shows the contents in a new text window.
-  *
-  * @return An ImageJ TextWindow  or null.
-  */
-  public TextWindow showInTextWindow(String name){
-    TextWindow tw = new TextWindow( name , name, 600, 400); 
-    join();
-    
-    tw.append("DELIM=" + (delim.equalsIgnoreCase("\t") ? "tab" : delim));
-    tw.append((String)vFieldnames.get(0));
-    for (int i = 0; i<vData.size();i++){tw.append((String) vData.get(i));}
-    
-    return tw;
-  }
     
 /** Write the data to an ASCII text file, includes header and fieldnames.
   *
@@ -673,7 +729,7 @@ public class Spreadsheet {
       }    
       //return split();  2009-02-28 switched to simple true
       dataAsArray = false;
-      String[] collagename = getDataColumn("collage_file");
+      String[] collagename = getDataColumn(matchColumnName("collage_file"));
       String[] collageslice = encodeSlicesFromString(collagename);
       boolean ok = appendDataColumn("collage_image", collageslice);
       return ok;
@@ -698,7 +754,23 @@ public class Spreadsheet {
       } //i-loop
       return slice_name;
    }
-   
+
+/**
+  * Shows the contents in a new text window.
+  *
+  * @return An ImageJ TextWindow  or null.
+  */
+  public TextWindow showInTextWindow(String name){
+    TextWindow tw = new TextWindow( name , "", 600, 400); 
+    join();
+    //tw.append("DELIM=" + (delim.equalsIgnoreCase("\t") ? "tab" : delim));
+    tw.append((String)vFieldnames.get(0));
+    for (int i = 0; i<vData.size();i++){tw.append((String) vData.get(i));}
+    
+    return tw;
+  }
+
+ 
 /**
   * Prints the contents of the vector to the ImageJ log window.
   * 
@@ -707,15 +779,16 @@ public class Spreadsheet {
     if (vHeader.size() != 0){
       for (int i = 0; i<vHeader.size();i++){IJ.log((String) vHeader.get(i));}
     }
-    boolean isSplit = dataAsArray;
-    if (dataAsArray==true){split();}
     if (vFieldnames.size() != 0){
-      for (int i = 0; i < vFieldnames.size();  i++){ IJ.log((String) vFieldnames.get(i));}
+      String[] fieldnames = getFieldnames();
+      String f = "";
+      for (int i = 0; i < fieldnames.length;  i++){f = f + "," + fieldnames[i];}
+      IJ.log(f);
     }
     if (vData.size() != 0){
+    join();
       for (int i = 0; i < vData.size();  i++){ IJ.log((String) vData.get(i));}
     }
-    if (isSplit ==  true) {join();} 
   }
   
 //---------
