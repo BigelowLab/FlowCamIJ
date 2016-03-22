@@ -50,6 +50,7 @@ public class FlowCam_Simple implements PlugIn {
         //load but don't show
         fcam.loadStack("collageMaskImages");
         fcam.loadStack("collageImages");
+        
         // make one resuable BlobHandler
         BlobHandler bh = new BlobHandler();
         BHCompoundBlob blob;
@@ -66,7 +67,10 @@ public class FlowCam_Simple implements PlugIn {
         String[] userLabels = fcam.data.getDataColumn("UserLabel");
         
         // iterate through the subimages
-        for (int isub = 0; isub < fcam.data.size(); isub ++){
+        int nsub = fcam.data.size();
+        for (int isub = 0; isub < nsub; isub ++){
+            IJ.showProgress(isub, nsub);
+            IJ.showStatus("isub = " + isub);
             subMaskIp = fcam.createSubsetBinaryProcessor(isub, "collageMaskImages", pad);
             subImageIp = fcam.createSubsetProcessor(isub, "collageImages", pad);
             ok = bh.setup(subMaskIp, subImageIp, fcam.cal, measureFlags);
@@ -87,12 +91,17 @@ public class FlowCam_Simple implements PlugIn {
                 blob = bh.blobs.get(labels[0]);
                 //update the results table
                 fcam.rt.incrementCounter();
-                if (hasBlob) {blob.showInfo(fcam.rt, N);} //show the results
+                blob.showInfo(fcam.rt, N);
                 fcam.rt.setLabel(fcam.name + "-" + (N+1), N); //set the label
                 fcam.rt.addValue("UserLabel", userLabels[isub]);
                 N++; //increment the results counter        
+            } else {
+                IJ.log("no blob found for " + isub);
+                N++;
             }
         } //isub loop
+        IJ.showProgress(2.0);
+        IJ.showStatus(" ");
         //fcam.rt.show("Results");
         fcam.saveTable();
         IJ.log("FlowCam_Simple: Done!");

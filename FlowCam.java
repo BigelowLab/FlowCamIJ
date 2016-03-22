@@ -239,11 +239,11 @@ public class FlowCam {
         File file;
         boolean ok = true;
         for (int i = 0; i < files.length; i++){
-            file = new File(files[i]);
+            file = new File(inputDir.getPath(), files[i]);
             ok = file.exists();
             if (!ok) {
                 IJ.log("file not found: " + files[i]); 
-                break;
+                //break;
             }
         }   
         return ok;
