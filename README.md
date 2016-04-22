@@ -10,7 +10,11 @@ FlowCam runs produce a number of files: images (raw, binarized masks, background
 
 Clone the repository to an ImageJ plugins directory.  
 
-Within ImageJ navigate the 'Compile and Run..." menu and compile the FlowCam.java file.  Compile and run the plugin "FlowCam Simple" to run a barebones version.
+
+### Usage
+
+The repository includes compiled code (.jar and .class) to ease the user experience.  You should be able to simply restart ImageJ (or use "Help > Refresh Menus").  The navigate to "Plugins > FlowCam > FlowCam Simple".
+
 
 ### What is in it?
 
