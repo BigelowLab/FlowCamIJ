@@ -9,9 +9,9 @@ public class FlowCamPlotWindow extends PlotWindow {
    public double[] ydata;
    public int[] index;
    public Roi roi;
-   public Plot;
+   public Plot plot;
    
-   public FlowCamPlotWindow(String title, String xlabel, Strng ylabel){
+   public FlowCamPlotWindow(String title, String xlabel, String ylabel){
       
    }
    

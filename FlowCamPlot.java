@@ -4,7 +4,7 @@ import ij.gui.PlotWindow;
 import ij.gui.Plot;
 import ij.gui.Roi;
 
-public class FlowCamPlotWindow extends PlotWindow {
+public class FlowCamPlot extends PlotWindow {
    public double[] xdata;
    public double[] ydata;
    public Roi roi;
