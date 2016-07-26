@@ -97,6 +97,12 @@ public class FlowCam_Simple implements PlugIn {
                 N++; //increment the results counter        
             } else {
                 IJ.log("no blob found for " + isub);
+                //blob = bh.blobs.get(labels[0]);
+                //fcam.rt.incrementCounter();
+                //blob.showInfo(fcam.rt, N);
+                fcam.rt.incrementCounter();
+                fcam.rt.setLabel(fcam.name + "-" + (N+1), N); //set the label
+                fcam.rt.addValue("UserLabel", userLabels[isub]);
                 N++;
             }
         } //isub loop
